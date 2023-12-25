@@ -208,7 +208,7 @@ module orion_pro_top
             ctrl_FB_BS <= cpu_wdata[4:2];
             ctrl_FB_xmem <= cpu_wdata[5];
             ctrl_FB_int <= cpu_wdata[6];
-            ctrl_FB_mz <= cpu_wdata[7];
+            ctrl_FB_mz <= ~cpu_wdata[7];
         end
 		else if (w_sel_io_fc & (~cpu_wr_n))
         begin
@@ -265,8 +265,12 @@ module orion_pro_top
     assign mem_req = !(mem_wrn & mem_rdn);
 
     // ROM's
-    logic[7:0] rom_1[8192];
+    logic[7:0] rom_1[8*1024];
+    logic[7:0] rom_2[64*1024];
+    logic[15:0] rom2_addr_full;
     assign cpu_rdata = (rom1_sel & (!cpu_rd_n)) ? rom_1[cpu_addr[12:0]] : 'z;
+    assign rom2_addr_full = { rom2_addr[2:0], cpu_addr[12:0] };
+    assign cpu_rdata = (rom2_sel & (!cpu_rd_n)) ? rom_2[rom2_addr_full] : 'z;
 
     // RAM's
     logic[7:0]  ram[1024*1024*2] /* verilator public */;
@@ -285,7 +289,8 @@ module orion_pro_top
 initial
 begin
     clk_div = '0;
-    $readmemh("../../ROMs/test.hex", rom_1);
+    $readmemh("../../ROMs/ROM1-321.hex", rom_1);
+    $readmemh("../../ROMs/ROM2-321.hex", rom_2);
 end
 /* verilator lint_on  UNUSEDSIGNAL */
 

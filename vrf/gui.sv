@@ -14,7 +14,7 @@ module gui
     (
         .i_clk                          (i_clk),
         .i_reset_n                      (i_reset_n),
-        .i_cfg_sw                       (8'b0000_1001)
+        .i_cfg_sw                       (8'b1000_0111)
     );
 
 endmodule
