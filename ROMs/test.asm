@@ -54,7 +54,7 @@ init:
     out	(_p0a_mem_man), a
     ld	a, 0x00
     out	(_pf8_vmode), a
-	;jp		fill_vmem
+	jp		fill_vmem
 
 main:
     in      a, (_p00_config)
@@ -156,7 +156,7 @@ loop_vm:
     jr      NZ, loop_vm
 	ld		a, c
 	inc		c
-	cp		28
+	cp		16
     jr      NZ, loop_seg
 	; disable window on RAM1
 	in		a, (_p0a_mem_man)
