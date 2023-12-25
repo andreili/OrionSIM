@@ -7,7 +7,7 @@
         },
         {
             "name": "Simulation infinite",
-            "makeArgs": []
+            "makeArgs": ["trace=0"]
         }
     ],
     "files.associations": {
