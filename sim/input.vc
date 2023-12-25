@@ -1,0 +1,6 @@
+// This file typically lists flags required by a large project, e.g. include directories
+-y ../../rtl/
+-y ../../rtl/TV80-verilog
+-y ../../rtl/core
+--timescale-override "1ps/1ps"
+--no-timing

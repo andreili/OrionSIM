@@ -1,0 +1,16 @@
+include ../../sim_common/Makefile.include
+
+QT_CXXFLAGS := -fPIC
+QT_LDFLAGS  := -lQt5Quick  -lQt5PrintSupport -lQt5Qml -lQt5Network -lQt5Widgets -lQt5Gui -lQt5Core
+QT_INCLUDE  := -I/usr/include/qt5 \
+               -I/usr/include/qt5/QtWidgets \
+               -I/usr/include/qt5/QtCore \
+               -I/usr/include/qt5/QtGui
+VERILATOR_FLAGS += -LDFLAGS "$(QT_LDFLAGS)" -CFLAGS "-g $(QT_CXXFLAGS) $(QT_INCLUDE)"
+
+
+gui: obj_dir/Vgui
+	@echo "--- GUI simulation are running ---"
+	obj_dir/V$@ $(SIM_ARGS)
+	rm -rf logs_top obj_dir fw.vh
+	@echo "--- GUI simulation are finished ---"

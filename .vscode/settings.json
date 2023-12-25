@@ -1,0 +1,17 @@
+{
+    "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools",
+    "makefile.configurations": [
+        {
+            "name": "Simulation 1kk loops",
+            "makeArgs": ["cycles=1000000", "trace=1"]
+        },
+        {
+            "name": "Simulation infinite",
+            "makeArgs": []
+        }
+    ],
+    "files.associations": {
+        "fstream": "cpp",
+        "cstdint": "cpp"
+    }
+}

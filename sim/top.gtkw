@@ -1,0 +1,86 @@
+[*]
+[*] GTKWave Analyzer v3.3.111 (w)1999-2020 BSI
+[*] Mon Dec 25 12:08:41 2023
+[*]
+[dumpfile] "/media/Develop/Hardware/OrionFPGA/sim/top.fst"
+[dumpfile_mtime] "Mon Dec 25 12:04:23 2023"
+[dumpfile_size] 1362496
+[savefile] "/media/Develop/Hardware/OrionFPGA/sim/top.gtkw"
+[timestart] 620
+[size] 2261 1100
+[pos] 828 123
+*-6.263034 870 11838 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] TOP.
+[treeopen] TOP.tb_top.
+[treeopen] TOP.tb_top.u_orion_core.
+[treeopen] TOP.tb_top.u_orion_core.u_cpu.i_tv80_core.
+[sst_width] 269
+[signals_width] 400
+[sst_expanded] 1
+[sst_vpaned_height] 327
+@28
+TOP.tb_top.i_clk
+TOP.tb_top.i_reset_n
+@800200
+-CPU
+@28
+TOP.tb_top.u_orion_core.cpu_clk
+@22
+TOP.tb_top.u_orion_core.cpu_addr[15:0]
+@28
+TOP.tb_top.u_orion_core.cpu_m1_n
+TOP.tb_top.u_orion_core.cpu_iorq_n
+TOP.tb_top.u_orion_core.cpu_mreq_n
+TOP.tb_top.u_orion_core.cpu_rd_n
+TOP.tb_top.u_orion_core.cpu_wr_n
+@22
+TOP.tb_top.u_orion_core.cpu_rdata[7:0]
+TOP.tb_top.u_orion_core.cpu_wdata[7:0]
+@1000200
+-CPU
+@28
+TOP.tb_top.u_orion_core.rom_sel
+@800200
+-PORTS
+@28
+TOP.tb_top.u_orion_core.w_sel_io
+TOP.tb_top.u_orion_core.w_sel_mem
+TOP.tb_top.u_orion_core.ctrl_FB_BS[2:0]
+TOP.tb_top.u_orion_core.ctrl_FB_SS[1:0]
+TOP.tb_top.u_orion_core.ctrl_FB_int
+TOP.tb_top.u_orion_core.ctrl_FB_erom
+TOP.tb_top.u_orion_core.ctrl_FB_mz
+TOP.tb_top.u_orion_core.ctrl_FB_xmem
+TOP.tb_top.u_orion_core.ctrl_mz
+@22
+TOP.tb_top.u_orion_core.r_ctrl_1a[7:0]
+TOP.tb_top.u_orion_core.r_ctrl_1b[7:0]
+TOP.tb_top.u_orion_core.r_ctrl_1c[7:0]
+TOP.tb_top.u_orion_core.r_ctrl_2a[7:0]
+TOP.tb_top.u_orion_core.r_ctrl_2b[7:0]
+TOP.tb_top.u_orion_core.r_ctrl_2c[7:0]
+TOP.tb_top.u_orion_core.r_ctrl_f9[4:0]
+@1000200
+-PORTS
+@800200
+-RAM
+@28
+TOP.tb_top.u_orion_core.mem_fxxx
+TOP.tb_top.u_orion_core.mem_top
+TOP.tb_top.u_orion_core.ma_sel[1:0]
+@22
+TOP.tb_top.u_orion_core.mem_addr_hi[20:14]
+@28
+TOP.tb_top.u_orion_core.mem_blk
+TOP.tb_top.u_orion_core.mem_wrn
+TOP.tb_top.u_orion_core.mem_rdn
+TOP.tb_top.u_orion_core.mem_req
+TOP.tb_top.u_orion_core.mb[2:0]
+@23
+TOP.tb_top.u_orion_core.ram_addr[19:0]
+@22
+TOP.tb_top.u_orion_core.ram_rdata[15:0]
+@1000200
+-RAM
+[pattern_trace] 1
+[pattern_trace] 0
