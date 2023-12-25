@@ -73,6 +73,7 @@ void sim_thread(TB* p_tb, GUIOutput* p_gui)
 int main(int argc, char** argv, char** env)
 {
     QApplication app(argc, argv);
+    app.setApplicationName("Orion-PRO RTL simulation");
     GUIOutput gui_out;
     gui_out.init();
     TB* tb = new TB(TOP_NAME_STR, argc, argv);

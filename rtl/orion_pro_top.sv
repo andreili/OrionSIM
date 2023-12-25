@@ -261,20 +261,18 @@ module orion_pro_top
     assign cpu_rdata = (rom1_sel & (!cpu_rd_n)) ? rom_1[cpu_addr[12:0]] : 'z;
 
     // RAM's
-    logic[15:0] ram[1024*1024] /* verilator public */;
-    logic[19:0] ram_addr;
-    logic[15:0] ram_rdata;
+    logic[7:0]  ram[1024*1024*2] /* verilator public */;
+    logic[20:0] ram_addr;
+    logic[7:0]  ram_rdata;
 
-    assign ram_addr = { mem_addr_hi[20:17], mem_addr_hi[15:14], cpu_addr[13:0] };
+    assign ram_addr = { mem_addr_hi, cpu_addr[13:0] };
     always_ff @(posedge cpu_clk)
     begin
-        if ((!mem_wrn) & (!mem_addr_hi[16]))
-            ram[ram_addr][7:0] <= cpu_wdata;
-        if ((!mem_wrn) & mem_addr_hi[16])
-            ram[ram_addr][15:8] <= cpu_wdata;
+        if (!mem_wrn)
+            ram[ram_addr] <= cpu_wdata;
     end
     assign ram_rdata = ram[ram_addr];
-    assign cpu_rdata = (!mem_rdn) ? (mem_addr_hi[16] ? ram_rdata[15:8] : ram_rdata[7:0]) : 'z;
+    assign cpu_rdata = (!mem_rdn) ? ram_rdata : 'z;
 
 initial
 begin
