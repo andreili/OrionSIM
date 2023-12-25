@@ -54,7 +54,7 @@ init:
     out	(_p0a_mem_man), a
     ld	a, 0x00
     out	(_pf8_vmode), a
-	jp		fill_vmem
+	;jp		fill_vmem
 
 main:
     in      a, (_p00_config)
