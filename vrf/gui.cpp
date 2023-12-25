@@ -26,7 +26,10 @@ void sim_thread(TB* p_tb, GUIOutput* p_gui)
     p_tb->init(on_step_cb);
     TOP_CLASS* top = p_tb->get_top();
 
-    p_gui->set_memory_pointer((uint8_t*)top->gui->u_orion_core->ram.m_storage);
+    p_gui->set_memory_pointer((uint8_t*)top->gui->u_orion_core->ram.m_storage,
+                              (uint8_t*)&top->gui->u_orion_core->video_mode,
+                              (uint8_t*)&top->gui->u_orion_core->screen_mode,
+                              (uint8_t*)&top->gui->u_orion_core->colors_pseudo);
 
     const char* cycles_str = p_tb->get_context()->commandArgsPlusMatch("cycles");
     int64_t cycles = -1;
@@ -57,12 +60,37 @@ void sim_thread(TB* p_tb, GUIOutput* p_gui)
         const uint32_t cycles_count = tick_speed / cycle_len;
         float sim_time;
         uint64_t cycle = 0;
+        time_t time_prev = time(0);
         while (!p_gui->is_closed())
         {
             p_tb->run_steps(cycles_count * TICK_TIME);
             sim_time = (cycle * 1.f) / cycle_len;
+
+            // check screen widht
+            int width;
+            if ((top->gui->u_orion_core->screen_mode & (1 << 7)))
+            {
+                width = 512;
+            }
+            else
+            {
+                width = 384;
+            }
+            if (p_gui->get_width() != width)
+            {
+                printf("Set width %d->%d\n", p_gui->get_width(), width);
+                p_gui->set_width(width);
+            }
+
             p_gui->draw(sim_time);
             ++cycle;
+            if ((cycle % cycle_len) == 0)
+            {
+                time_t time_new = time(0);
+                time_t delta = time_new - time_prev;
+                time_prev = time_new;
+                printf("Sim time for 1 second: %ld\n", delta);
+            }
         }
     }
 
@@ -82,79 +110,3 @@ int main(int argc, char** argv, char** env)
     thr.join();
     return 0;
 }
-
-#if 0
-#include <memory>
-#include <fstream>
-
-uint32_t prev_marker;
-bool initialized;
-
-int main(int argc, char** argv, char** env)
-{
-    TB* tb = new TB(TOP_NAME_STR, argc, argv);
-    tb->init(on_step_cb);
-    TOP_CLASS* top = tb->get_top();
-    initialized = false;
-
-    const char* cycles_str = tb->get_context()->commandArgsPlusMatch("cycles");
-    uint32_t cycles = (uint32_t)-1;
-    if (strlen(cycles_str) > 8)
-    {
-        cycles_str += 8;
-        cycles = atoi(cycles_str);
-    }
-
-    // wait for reset
-    top->i_reset_n = 0;
-    tb->run_steps(20 * TICK_TIME);
-    top->i_reset_n = 1;
-    initialized = true;
-
-    int ret = -1;
-    for (int i=0 ; i<cycles ; ++i)
-    {
-        ret = tb->run_steps(TICK_TIME);
-        if (ret != 0)
-        {
-            break;
-        }
-    }
-    if (cycles != (uint32_t)-1)
-    {
-        ret = 0;
-    }
-
-    // memory dump
-    /*uint8_t* p_ram = (uint8_t*)top->gui->u_orion_core->ram.m_storage;
-    for (int32_t addr=0xc000 ; addr<0xcfff ; addr++)
-    {
-        int32_t offset = addr << 1;
-        uint8_t val = p_ram[offset];
-        if ((addr % 16) == 0)
-        {
-            printf("\n0x%+4x: %02x", addr, val);
-        }
-        else
-        {
-            printf(" %02x", val);
-        }
-    }
-    printf("\n");
-    std::ofstream out_f("../dump.bin");
-    out_f.write((char*)p_ram, 1024*1024);
-    out_f.close();*/
-
-    if (ret == 1)
-    {
-        ret = 0;
-    }
-
-    tb->finish();
-    top->final();
-#if VM_COVERAGE
-    //tb->get_context()->coveragep()->write(COV_FN);
-#endif
-    return ret;
-}
-#endif
