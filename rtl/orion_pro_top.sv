@@ -91,7 +91,7 @@ module orion_pro_top
 	logic	w_sel_mem_f8, w_sel_mem_f9, w_sel_mem_fa;
 
 	logic	w_sel_io;
-	logic	w_sel_io_f8, w_sel_io_f9, w_sel_io_fa, w_sel_io_fb;
+	logic	w_sel_io_f8, w_sel_io_f9, w_sel_io_fa, w_sel_io_fb, w_sel_io_fc;
 	logic	w_sel_io_00, w_sel_io_01, w_sel_io_02;
 
 	logic	w_sel_f9_write, w_sel_fb_write;
@@ -99,6 +99,9 @@ module orion_pro_top
 
 	logic	w_erom;
 	logic[4:0]	w_ram_page;
+    logic[4:0]  video_mode /* verilator public */;
+    logic[7:0]  screen_mode /* verilator public */;
+    logic[7:0]  colors_pseudo /* verilator public */;
 
     // IO/MEM ports addresses
 	assign w_sel_mem = ~(cpu_mreq_n | ~cpu_rfsh_n) & o128_mode;
@@ -116,6 +119,7 @@ module orion_pro_top
 	assign w_sel_io_f9 = (cpu_addr[7:0] == 8'hf9) & w_sel_io;
 	assign w_sel_io_fa = (cpu_addr[7:0] == 8'hfa) & w_sel_io;
 	assign w_sel_io_fb = (cpu_addr[7:0] == 8'hfb) & w_sel_io;
+	assign w_sel_io_fc = (cpu_addr[7:0] == 8'hfc) & w_sel_io;
 
     // port 01
 	assign w_sel_01_write = w_sel_io_01 & (~cpu_wr_n);
@@ -127,11 +131,11 @@ module orion_pro_top
 			r_ctrl_1b <= '0;
 			r_ctrl_1c <= '0;
 		end
-		else if (w_sel_io_01 & (cpu_addr[1:0] == 2'b00))
+		else if (w_sel_io_02 & (cpu_addr[1:0] == 2'b00) & (~cpu_wr_n))
 			r_ctrl_1a <= cpu_wdata;
-		else if (w_sel_io_01 & (cpu_addr[1:0] == 2'b01))
+		else if (w_sel_io_02 & (cpu_addr[1:0] == 2'b01) & (~cpu_wr_n))
 			r_ctrl_1b <= cpu_wdata;
-		else if (w_sel_io_01 & (cpu_addr[1:0] == 2'b10))
+		else if (w_sel_io_02 & (cpu_addr[1:0] == 2'b10) & (~cpu_wr_n))
 			r_ctrl_1c <= cpu_wdata;
 	end
 
@@ -149,7 +153,6 @@ module orion_pro_top
 	assign o128_mode	= r_ctrl_1c[7];
 
 // port 02
-	assign w_sel_02_write = w_sel_io_02 & (~cpu_wr_n);
 	always @(posedge cpu_clk)
 	begin
 		if (~reset_n)
@@ -158,36 +161,19 @@ module orion_pro_top
 			r_ctrl_2b <= '0;
 			r_ctrl_2c <= '0;
 		end
-		else if (w_sel_io_02 & (cpu_addr[1:0] == 2'b00))
+		else if (w_sel_io_01 & (cpu_addr[1:0] == 2'b00) & (~cpu_wr_n))
 			r_ctrl_2a <= cpu_wdata;
-		else if (w_sel_io_02 & (cpu_addr[1:0] == 2'b01))
+		else if (w_sel_io_01 & (cpu_addr[1:0] == 2'b01) & (~cpu_wr_n))
 			r_ctrl_2b <= cpu_wdata;
-		else if (w_sel_io_02 & (cpu_addr[1:0] == 2'b10))
+		else if (w_sel_io_01 & (cpu_addr[1:0] == 2'b10) & (~cpu_wr_n))
 			r_ctrl_2c <= cpu_wdata;
 	end
 
 	assign ram0_page = r_ctrl_2a;
 	assign ram1_page = r_ctrl_2b;
 	assign ram2_page = r_ctrl_2c;
-
-    // port F9
-	always @(posedge cpu_clk)
-	begin
-		if (~reset_n)
-			r_ctrl_f9 <= '0;
-		else if ((w_sel_mem_f9 | w_sel_io_f9) & (~cpu_wr_n))
-			r_ctrl_f9 <= cpu_wdata[4:0];
-	end
 	assign w_ram_page = r_ctrl_f9;
 
-    // port FB
-	always @(posedge cpu_clk)
-	begin
-		if (~reset_n)
-			ctrl_FB_erom <= '1;
-		else if ((w_sel_mem_f8 | w_sel_io_f8) & (~cpu_wr_n))
-			ctrl_FB_erom <= '0;
-	end
 	always @(posedge cpu_clk)
 	begin
 		if (~reset_n)
@@ -197,6 +183,24 @@ module orion_pro_top
             ctrl_FB_xmem <= '0;
             ctrl_FB_int <= '0;
             ctrl_FB_mz <= '1;
+			ctrl_FB_erom <= '1;
+			r_ctrl_f9 <= '0;
+            video_mode <= '0;
+            screen_mode <= '0;
+            colors_pseudo <= '0;
+        end
+		else if ((w_sel_mem_f8 | w_sel_io_f8) & (~cpu_wr_n))
+        begin
+			ctrl_FB_erom <= '0;
+            video_mode <= cpu_wdata[4:0];
+        end
+		else if ((w_sel_mem_f9 | w_sel_io_f9) & (~cpu_wr_n))
+        begin
+			r_ctrl_f9 <= cpu_wdata[4:0];
+        end
+		else if ((w_sel_mem_fa | w_sel_io_fa) & (~cpu_wr_n))
+        begin
+            screen_mode <= cpu_wdata;
         end
 		else if (w_sel_io_fb & (~cpu_wr_n))
         begin
@@ -206,6 +210,10 @@ module orion_pro_top
             ctrl_FB_int <= cpu_wdata[6];
             ctrl_FB_mz <= cpu_wdata[7];
         end
+		else if (w_sel_io_fb & (~cpu_wr_n))
+        begin
+            colors_pseudo <= cpu_wdata;
+        end
 	end
 
     logic ctrl_mz;
@@ -214,12 +222,12 @@ module orion_pro_top
     assign ctrl_mz = cpu_addr[15] | cpu_addr[14] | ctrl_FB_mz;
 
 	assign cpu_rdata =	(w_sel_io_00 & (!cpu_rd_n) & (cpu_addr[1:0] == 2'b00)) ? i_cfg_sw :
-						(w_sel_io_01 & (!cpu_rd_n) & (cpu_addr[1:0] == 2'b00)) ? r_ctrl_1a :
-						(w_sel_io_01 & (!cpu_rd_n) & (cpu_addr[1:0] == 2'b01)) ? r_ctrl_1b :
-						(w_sel_io_01 & (!cpu_rd_n) & (cpu_addr[1:0] == 2'b10)) ? r_ctrl_1c :
-						(w_sel_io_02 & (!cpu_rd_n) & (cpu_addr[1:0] == 2'b00)) ? r_ctrl_2a :
-						(w_sel_io_02 & (!cpu_rd_n) & (cpu_addr[1:0] == 2'b01)) ? r_ctrl_2b :
-						(w_sel_io_02 & (!cpu_rd_n) & (cpu_addr[1:0] == 2'b10)) ? r_ctrl_2c :
+						(w_sel_io_02 & (!cpu_rd_n) & (cpu_addr[1:0] == 2'b00)) ? r_ctrl_1a :
+						(w_sel_io_02 & (!cpu_rd_n) & (cpu_addr[1:0] == 2'b01)) ? r_ctrl_1b :
+						(w_sel_io_02 & (!cpu_rd_n) & (cpu_addr[1:0] == 2'b10)) ? r_ctrl_1c :
+						(w_sel_io_01 & (!cpu_rd_n) & (cpu_addr[1:0] == 2'b00)) ? r_ctrl_2a :
+						(w_sel_io_01 & (!cpu_rd_n) & (cpu_addr[1:0] == 2'b01)) ? r_ctrl_2b :
+						(w_sel_io_01 & (!cpu_rd_n) & (cpu_addr[1:0] == 2'b10)) ? r_ctrl_2c :
 						((w_sel_mem_f9 | w_sel_io_f9) & (!cpu_rd_n)) ? { 3'b0, r_ctrl_f9 } :
 						'z;
 
@@ -241,8 +249,8 @@ module orion_pro_top
     assign mem_addr_hi = ((!ctrl_mz) & (!cpu_addr[15]) & (!cpu_addr[14])) ? { 2'b00, ctrl_FB_BS, ctrl_FB_SS }
                        : (mem_top) ? { 5'b1_1111, cpu_addr[15:14] }
                        : (ma_sel == 2'b00) ? r_ctrl_2a[6:0]
-                       : (ma_sel == 2'b01) ? r_ctrl_2b[6:0]
-                       : (ma_sel == 2'b10) ? r_ctrl_2c[6:0]
+                       : (ma_sel == 2'b10) ? r_ctrl_2b[6:0]
+                       : (ma_sel == 2'b01) ? r_ctrl_2c[6:0]
                        : { ram_page_sel, cpu_addr[15:14] };
 
     logic rom_sel, rom1_sel, rom2_sel;
@@ -277,7 +285,7 @@ module orion_pro_top
 initial
 begin
     clk_div = '0;
-    $readmemh("../../ROMs/test_pro.hex", rom_1);
+    $readmemh("../../ROMs/test.hex", rom_1);
 end
 /* verilator lint_on  UNUSEDSIGNAL */
 
