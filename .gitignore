@@ -3,3 +3,5 @@
 *.hex
 *.lst
 *.gtkw
+*.P
+*.o
