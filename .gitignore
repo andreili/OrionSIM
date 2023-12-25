@@ -1,6 +1,5 @@
 *.fst
 *.bin
-*.hex
 *.lst
 *.gtkw
 *.P

@@ -9,7 +9,7 @@ QT_INCLUDE  := -I/usr/include/qt5 \
 VERILATOR_FLAGS += -LDFLAGS "$(QT_LDFLAGS)" -CFLAGS "-g $(QT_CXXFLAGS) $(QT_INCLUDE)"
 
 
-gui: obj_dir/Vgui
+emulate: obj_dir/Vemulate
 	@echo "--- GUI simulation are running ---"
 	obj_dir/V$@ $(SIM_ARGS)
 ifeq ($(trace),1)

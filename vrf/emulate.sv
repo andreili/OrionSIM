@@ -1,6 +1,6 @@
 `timescale 1ps/1ps
 
-module gui
+module emulate
 (
     input   wire                        i_clk,
     input   wire                        i_reset_n
