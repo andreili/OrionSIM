@@ -12,5 +12,11 @@ VERILATOR_FLAGS += -LDFLAGS "$(QT_LDFLAGS)" -CFLAGS "-g $(QT_CXXFLAGS) $(QT_INCL
 gui: obj_dir/Vgui
 	@echo "--- GUI simulation are running ---"
 	obj_dir/V$@ $(SIM_ARGS)
+ifeq ($(trace),1)
+	mv logs_$@/wave.fst ../$@.fst
+endif
 	rm -rf logs_top obj_dir fw.vh
 	@echo "--- GUI simulation are finished ---"
+ifeq ($(trace),1)
+	gtkwave -a ../$@.gtkw -6 -7 $(GTK_FLAGS) ../$@.fst
+endif
