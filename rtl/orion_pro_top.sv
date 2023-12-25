@@ -210,7 +210,7 @@ module orion_pro_top
             ctrl_FB_int <= cpu_wdata[6];
             ctrl_FB_mz <= cpu_wdata[7];
         end
-		else if (w_sel_io_fb & (~cpu_wr_n))
+		else if (w_sel_io_fc & (~cpu_wr_n))
         begin
             colors_pseudo <= cpu_wdata;
         end
