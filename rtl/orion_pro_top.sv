@@ -93,6 +93,7 @@ module orion_pro_top
 	logic	w_sel_io;
 	logic	w_sel_io_f8, w_sel_io_f9, w_sel_io_fa, w_sel_io_fb, w_sel_io_fc;
 	logic	w_sel_io_00, w_sel_io_01, w_sel_io_02, w_sel_io_06;
+    logic   w_sel_io_0a, w_sel_io_0b;
 
 	logic	w_sel_f9_write, w_sel_fb_write;
 	logic	w_sel_01_write, w_sel_02_write;
@@ -115,8 +116,11 @@ module orion_pro_top
 	assign w_sel_io_00 = (cpu_addr[7:2] == 6'h00) & w_sel_io;   //00..03
 	assign w_sel_io_01 = (cpu_addr[7:2] == 6'h01) & w_sel_io;   //04..07
 	assign w_sel_io_02 = (cpu_addr[7:2] == 6'h02) & w_sel_io;   //08..0b
-    //..
+    //...
 	assign w_sel_io_06 = (cpu_addr[7:2] == 6'h06) & w_sel_io;   //18..1b
+    //...
+	assign w_sel_io_0a = (cpu_addr[7:2] == 6'h0a) & w_sel_io;   //28..2b
+	assign w_sel_io_0b = (cpu_addr[7:2] == 6'h0b) & w_sel_io;   //2c..2f
 
 	assign w_sel_io_f8 = (cpu_addr[7:0] == 8'hf8) & w_sel_io;
 	assign w_sel_io_f9 = (cpu_addr[7:0] == 8'hf9) & w_sel_io;
@@ -317,11 +321,49 @@ module orion_pro_top
     );
     assign cpu_rdata = sel_kbd ? kbd_rdata : 'z;
 
+    // ROM disk
+    logic[7:0]  rom_dsk_page;
+    logic[15:0] rom_dsk_addr_lo;
+    logic[7:0]  rom_dsk_data, rom_rdata;
+    logic[7:0]  rom_dsk[1024*1024];
+	always @(posedge cpu_clk)
+	begin
+		if (~reset_n)
+		begin
+			rom_dsk_page <= '0;
+		end
+		/*else if (w_sel_io_0b & (~cpu_wr_n))
+			rom_dsk_page <= cpu_wdata;*/
+	end
+    /* verilator lint_off PINCONNECTEMPTY */
+    i8255
+    u_rom_dsk_io
+    (
+        .i_clk          (cpu_clk),
+        .i_addr         (cpu_addr[1:0]),
+        .i_data         (cpu_wdata),
+        .o_data         (rom_rdata),
+        .i_rd_n         (cpu_rd_n),
+        .i_wr_n         (cpu_wr_n),
+        .i_cs_n         (!w_sel_io_0a),
+        .i_reset        (!reset_n),
+        .i_PA           (rom_dsk_data),
+        .o_PA           (),
+        .i_PB           (),
+        .o_PB           (rom_dsk_addr_lo[7:0]),
+        .i_PC           (),
+        .o_PC           (rom_dsk_addr_lo[15:8])
+    );
+    /* verilator lint_on PINCONNECTEMPTY */
+    assign rom_dsk_data = rom_dsk[{ rom_dsk_page[3:0], rom_dsk_addr_lo }];
+    assign cpu_rdata = w_sel_io_0a ? rom_rdata : 'z;
+
 initial
 begin
     clk_div = '0;
     $readmemh("../../ROMs/ROM1-321.hex", rom_1);
     $readmemh("../../ROMs/ROM2-321.hex", rom_2);
+    $readmemh("../../ROMs/romdisk1.hex", rom_dsk);
 end
 /* verilator lint_on  UNUSEDSIGNAL */
 
