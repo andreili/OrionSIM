@@ -13,7 +13,7 @@ int key_matrix[8][11] = {
 /*l D4*/  { Qt::Key_Shift,            Qt::Key_Control,          0,                        0xDE,                     'S',            'M',               ' ',           'T',           'X',        Qt::Key_Left, '<' },
 /*t D5*/  { '7' | Qt::KeypadModifier, '0' | Qt::KeypadModifier, '1' | Qt::KeypadModifier, '4' | Qt::KeypadModifier, Qt::Key_Plus,   Qt::Key_Backspace, Qt::Key_Right,  Qt::Key_Down, '>',        '\\',         'V' },
 /*  D6*/  { '8' | Qt::KeypadModifier, '.',                      '2' | Qt::KeypadModifier, '5' | Qt::KeypadModifier, Qt::Key_F6,     Qt::Key_Home,      Qt::Key_Return, Qt::Key_Up,   '/',        'H',          'Z' },
-/*  D7*/  { '9' | Qt::KeypadModifier, Qt::Key_Return,           '3' | Qt::KeypadModifier, '6' | Qt::KeypadModifier, Qt::Key_Insert, Qt::Key_End,       ':',            '?',          '-',        '0',          '9' }};
+/*  D7*/  { '9' | Qt::KeypadModifier, Qt::Key_Return,           '3' | Qt::KeypadModifier, '6' | Qt::KeypadModifier, Qt::Key_Insert, Qt::Key_End,       ';',            '?',          '-',        '0',          '9' }};
 /*scancode  D0                        D1                        D2                        D3                        D4              D5                 D6              D7            CD0         CD1           CD2 */
 
 typedef union
@@ -47,17 +47,16 @@ public:
         {
             this->pressed.erase(event->key());
         }
-        printf("Key event: 0x%x\n", event->key());
     }
     void proc()
     {
         uint32_t scancode_msk = ((this->p_output->bt.PC & 0x7) << 8) | this->p_output->bt.PB;
         uint32_t result = 0xff;
-        for (int j=0 ; j<10 ; ++j)
+        for (int j=0 ; j<11 ; ++j)
         {
             if ((scancode_msk & (1 << j)) == 0)
             {
-                for (int i=0 ; i<7 ; ++i)
+                for (int i=0 ; i<8 ; ++i)
                 {
                     int key = key_matrix[i][j];
                     if (this->pressed.count(key) != 0)
