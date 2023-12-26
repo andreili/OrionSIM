@@ -261,10 +261,12 @@ module orion_pro_top
     assign rom1_sel = rom_sel &    (!cpu_addr[13]) & (rom1_en | ctrl_FB_erom);
     assign rom2_sel = rom_sel &      cpu_addr[13]  &  rom2_en;
 
-    logic mem_blk, mem_wrn, mem_rdn, mem_req;
-    assign mem_blk = (((cpu_addr[10] | cpu_addr[11]) & mem_fxxx) & (!ctrl_FB_xmem)) | rom1_sel | rom2_sel;
-    assign mem_wrn = cpu_wr_n | cpu_mreq_n | mem_blk;
-    assign mem_rdn = cpu_rd_n | cpu_mreq_n | mem_blk;
+    logic blram, mem_blk, mem_rd_en, mem_wrn, mem_rdn, mem_req;
+    assign blram = rom1_sel | rom2_sel | (cpu_mreq_n | ~cpu_rfsh_n);
+    assign mem_blk = (((cpu_addr[10] | cpu_addr[11]) & mem_fxxx) & (!ctrl_FB_xmem));
+    assign mem_rd_en = (!mem_blk) | cpu_addr[11];
+    assign mem_wrn = cpu_wr_n | cpu_mreq_n | mem_blk | blram;
+    assign mem_rdn = cpu_rd_n | cpu_mreq_n | (!mem_rd_en) | blram;
     assign mem_req = !(mem_wrn & mem_rdn);
 
     // ROM's
