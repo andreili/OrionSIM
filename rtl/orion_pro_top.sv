@@ -249,8 +249,8 @@ module orion_pro_top
     logic[20:14] mem_addr_hi;
     logic[4:0] ram_page_sel;
     assign ram_page_sel = o128_mode ? w_ram_page : ram_page_pro[4:0];
-    assign mem_addr_hi = ((!ctrl_mz) & (!cpu_addr[15]) & (!cpu_addr[14])) ? { 2'b00, ctrl_FB_BS, ctrl_FB_SS }
-                       : (mem_top) ? { 5'b0_0111, cpu_addr[15:14] } // segment 0x1f!!!
+    assign mem_addr_hi = /*((!ctrl_mz) & (!cpu_addr[15]) & (!cpu_addr[14])) ? { 2'b00, ctrl_FB_BS, ctrl_FB_SS }
+                       :*/ (mem_top) ? { 5'b0_0111, cpu_addr[15:14] } // segment 0x1f!!!
                        : (ma_sel == 2'b00) ? r_ctrl_2a[6:0]
                        : (ma_sel == 2'b10) ? r_ctrl_2b[6:0]
                        : (ma_sel == 2'b01) ? r_ctrl_2c[6:0]
