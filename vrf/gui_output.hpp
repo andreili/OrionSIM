@@ -39,6 +39,8 @@ typedef union
     } bt;
 } port_fc_u;
 
+#define SYS_HEIGHT 64
+
 class GUIOutput : public QLabel
 {
 public:
@@ -50,15 +52,16 @@ public:
         this->width = 512;
         this->height = 256;
         setWindowFlags(Qt::Dialog | Qt::MSWindowsFixedSizeDialogHint);
-        this->setFixedSize(this->width, this->height);
+        this->setFixedSize(this->width, this->height+SYS_HEIGHT);
         this->p_image = new QImage(this->width, this->height, QImage::Format_RGB32);
+        this->p_background_image = new QImage(this->width, this->height+SYS_HEIGHT, QImage::Format_RGB32);
     }
 
     int get_width() { return this->width; }
     void set_width(int width)
     {
         this->width = width;
-        this->setFixedSize(this->width, this->height);
+        this->setFixedSize(this->width, this->height+SYS_HEIGHT);
         //this->p_image->resize(this->width, this->height);
     }
 
@@ -210,25 +213,23 @@ public:
 
     void draw(float time)
     {
-        QString str_time;
-        str_time.asprintf("Sim time: %.2fs", time);
-        printf("Sim time: %.2fs\n", time);
+        this->p_background_image->fill(0);
 
-        QImage background_image(this->width, this->height, QImage::Format_RGB32);
-        background_image.fill(0xffffffff);
-
-        QPainter painter(&background_image);
+        QPainter painter(this->p_background_image);
         draw_mem([this](int x, int y, uint32_t argb)
             {
                 this->p_image->setPixel(x, y, argb);
             });
         painter.drawImage(0, 0, *this->p_image);
 
-        painter.setPen(QColorConstants::Red);
-        painter.drawText(0, 16, str_time);
+        QString str_time;
+        str_time = QString::asprintf("Sim time: %.2fs", time);
+        painter.setPen(QColorConstants::White);
+        painter.drawText(QRect(0, 256, 384, SYS_HEIGHT), 0, str_time);
+
         painter.end();
 
-        this->setPixmap(QPixmap::fromImage(background_image));
+        this->setPixmap(QPixmap::fromImage(*this->p_background_image));
         this->show();
     }
 
@@ -258,5 +259,6 @@ private:
     port_fa_u* p_fa;
     port_fc_u* p_fc;
     QImage* p_image;
+    QImage* p_background_image;
     KBD* p_kbd;
 };
