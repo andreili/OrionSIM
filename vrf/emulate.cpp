@@ -1,15 +1,17 @@
 #include <QApplication>
-#include "gui_output.hpp"
 #include "sim.hpp"
 
 int main(int argc, char** argv)
 {
     QApplication app(argc, argv);
     app.setApplicationName("Orion-PRO RTL simulation");
-    GUIOutput gui_out;
-    gui_out.init();
+
+    GUIOutput* p_gui_out = new GUIOutput();
+    KBD* p_kbd = new KBD();
     SIM* p_sim = new SIM();
-    p_sim->init(&gui_out, argc, argv);
+    p_gui_out->init(p_kbd);
+    p_sim->init(p_gui_out, p_kbd, argc, argv);
+
     app.exec();
     p_sim->run();
     return 0;

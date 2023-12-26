@@ -1,143 +1,103 @@
 `timescale 1ps/1ps
-/*
+
 module i8255
 (
     input   wire        i_clk,
+    input   wire[1:0]   i_addr,
     input   wire[7:0]   i_data,
+    output  wire[7:0]   o_data,
     input   wire        i_rd_n,
     input   wire        i_wr_n,
     input   wire        i_cs_n,
     input   wire        i_reset,
-		clk	: in    std_logic;
-		dbus	: inout std_logic_vector(7 downto 0);
-		addr	: in    std_logic_vector(1 downto 0);
-		rd_n	: in    std_logic;
-		wr_n	: in    std_logic;
-		cs_n	: in    std_logic;
-		res	: in    std_logic;
-		
-		PA		: inout std_logic_vector(7 downto 0);
-		PB		: inout std_logic_vector(7 downto 0);
-		PC		: inout std_logic_vector(7 downto 0)
-	);
-end entity;
+    input   wire[7:0]   i_PA,
+    output  wire[7:0]   o_PA,
+    input   wire[7:0]   i_PB,
+    output  wire[7:0]   o_PB,
+    input   wire[7:0]   i_PC,
+    output  wire[7:0]   o_PC
+);
 
-architecture rtl of i8255 is
+    logic[7:0] reg_A;
+    logic[7:0] reg_B;
+    logic[7:0] reg_C;
+    logic[7:0] control_reg;
 
-signal reg_A				: std_logic_vector(7 downto 0);
-signal reg_B				: std_logic_vector(7 downto 0);
-signal reg_C				: std_logic_vector(7 downto 0);
-signal control_reg		: std_logic_vector(7 downto 0);
+    logic[7:0] Ain;
+    logic[7:0] Bin;
+    logic[7:0] Cin;
+    logic[3:0] Cinl;
+    logic[3:0] Cinh;
 
-signal Ain					: std_logic_vector(7 downto 0);
-signal Bin					: std_logic_vector(7 downto 0);
-signal Cin					: std_logic_vector(7 downto 0);
-signal Cinl					: std_logic_vector(3 downto 0);
-signal Cinh					: std_logic_vector(3 downto 0);
+    always_ff @(posedge i_clk)
+    begin
+        if (i_reset)
+        begin
+            reg_A <= '0;
+            reg_B <= '0;
+            reg_C <= '0;
+            control_reg <= 8'h9B;
+        end
+        else if ((!i_cs_n) & (!i_wr_n))
+        begin
+            case (i_addr)
+                2'b00: reg_A <= i_data;
+                2'b01: reg_B <= i_data;
+                2'b10: reg_C <= i_data;
+                2'b11:
+                    begin
+                        if (i_data[7] == 1'b1)	// immediate value
+                            control_reg <= i_data;
+                        else	// set/reset bit in port C
+                        begin
+                            if (i_data[1] == '1) // set bit
+                                reg_C[i_data[3:1]] <= '1;
+                            else // reset bit
+                                reg_C[i_data[3:1]] <= '0;
+                        end
+                    end
+            endcase
+        end
+    end
 
-begin
+    logic[7:0] reg_o_A, reg_o_B, reg_o_C;
+    always_ff @(posedge i_clk)
+    begin
+        if (control_reg[4] == '0)
+            reg_o_A <= reg_A;
 
-process (clk)
-begin
-	if (rising_edge(clk)) then
-		if (res = '1') then
-			reg_A <= (others => '0');
-			reg_B <= (others => '0');
-			reg_C <= (others => '0');
-			control_reg <= X"9B";
-		elsif ((cs_n = '0') and (wr_n = '0')) then
-			case addr is
-				when "00" => 	reg_A <= dbus;
-				when "01" => 	reg_B <= dbus;
-				when "10" =>	reg_C <= dbus;
-				when "11" =>	NULL;
-			end case;
-			
-			if (addr = "11") then	-- control register
-				if (dbus(7) = '1') then	-- immediate value
-					control_reg <= dbus;
-				else	-- set/reset bit in port C
-					if (dbus(1) = '1') then
-						-- set bit
-						case dbus(3 downto 1) is
-							when "000" => 	reg_C(0) <= '1';
-							when "001" => 	reg_C(1) <= '1';
-							when "010" => 	reg_C(2) <= '1';
-							when "011" => 	reg_C(3) <= '1';
-							when "100" => 	reg_C(4) <= '1';
-							when "101" => 	reg_C(5) <= '1';
-							when "110" => 	reg_C(6) <= '1';
-							when "111" => 	reg_C(7) <= '1';
-						end case;
-					else
-						-- reset bit
-						case dbus(3 downto 1) is
-							when "000" => 	reg_C(0) <= '0';
-							when "001" => 	reg_C(1) <= '0';
-							when "010" => 	reg_C(2) <= '0';
-							when "011" => 	reg_C(3) <= '0';
-							when "100" => 	reg_C(4) <= '0';
-							when "101" => 	reg_C(5) <= '0';
-							when "110" => 	reg_C(6) <= '0';
-							when "111" => 	reg_C(7) <= '0';
-						end case;
-					end if;
-				end if;
-			end if;
-		end if;
-	end if;
-end process;
+        if (control_reg[1] == '0)
+            reg_o_B <= reg_B;
 
-process (clk)
-begin
-	if (rising_edge(clk)) then
-		if (control_reg(4) = '1') then
-			PA <= (others => 'Z');
-		else
-			PA <= reg_A;
-		end if;
+        if (control_reg[0] == '0)
+            reg_o_C[3:0] <= reg_C[3:0];
 
-		if (control_reg(1) = '1') then
-			PB <= (others => 'Z');
-		else
-			PB <= reg_B;
-		end if;
+        if (control_reg[3] == '0)
+            reg_o_C[7:4] <= reg_C[7:4];
+    end;
 
-		if (control_reg(0) = '1') then
-			PC(3 downto 0) <= (others => 'Z');
-		else
-			PC(3 downto 0) <= reg_C(3 downto 0);
-		end if;
+    assign o_PA = reg_o_A;
+    assign o_PB = reg_o_B;
+    assign o_PC = reg_o_C;
+    assign Cinl	= control_reg[0] ? i_PC[3:0] : reg_C[3:0];
+    assign Bin	= control_reg[1] ? i_PB      : reg_B;
+    assign Cinh	= control_reg[3] ? i_PC[7:4] : reg_C[7:4];
+    assign Ain	= control_reg[4] ? i_PA : reg_A;
+    assign Cin	= { Cinh, Cinl };
 
-		if (control_reg(3) = '1') then
-			PC(7 downto 4) <= (others => 'Z');
-		else
-			PC(7 downto 4) <= reg_C(7 downto 4);
-		end if;
-	end if;
-end process;
+    logic[7:0] r_data;
+    always_ff @(posedge i_clk)
+    begin
+        if ((!i_cs_n) & (!i_rd_n))
+        begin
+            case (i_addr)
+            2'b00: r_data <= Ain;
+            2'b01: r_data <= Bin;
+            2'b10: r_data <= Cin;
+            2'b11: r_data <= control_reg;
+            endcase;
+        end
+    end;
+    assign o_data = r_data;
 
-Ain	<= PA when (control_reg(4) = '1') else reg_A;
-Bin	<= PB when (control_reg(1) = '1') else reg_B;
-Cinl	<= PC(3 downto 0) when (control_reg(0) = '1') else reg_C(3 downto 0);
-Cinh	<= PC(7 downto 4) when (control_reg(3) = '1') else reg_C(7 downto 4);
-Cin	<= Cinh & Cinl;
-
-process (clk)
-begin
-	if (rising_edge(clk)) then
-		if ((cs_n = '0') and (rd_n = '0')) then
-			case addr is
-				when "00" => 	dbus <= Ain;
-				when "01" => 	dbus <= Bin;
-				when "10" =>	dbus <= Cin;
-				when "11" =>	dbus <= control_reg;
-			end case;
-		else
-			dbus <= (others => 'Z');
-		end if;
-	end if;
-end process;
-
-end rtl;
-*/
+endmodule

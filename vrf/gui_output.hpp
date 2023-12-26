@@ -4,8 +4,8 @@
 #include <QPainter>
 #include <QEvent>
 #include <QCloseEvent>
-#include <QKeyEvent>
 #include <QImage>
+#include "kbd.hpp"
 
 typedef union
 {
@@ -42,8 +42,9 @@ typedef union
 class GUIOutput : public QLabel
 {
 public:
-    void init()
+    void init(KBD* p_kbd)
     {
+        this->p_kbd = p_kbd;
         this->close = false;
         //this->input_bits = 0;
         this->width = 512;
@@ -233,12 +234,12 @@ public:
 
     void keyPressEvent(QKeyEvent *evt)
     {
-        //
+        this->p_kbd->add_event(evt);
     }
 
     void keyReleaseEvent(QKeyEvent *evt)
     {
-        //
+        this->p_kbd->add_event(evt);
     }
     
     void closeEvent(QCloseEvent *evt)
@@ -257,4 +258,5 @@ private:
     port_fa_u* p_fa;
     port_fc_u* p_fc;
     QImage* p_image;
+    KBD* p_kbd;
 };

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gui_output.hpp"
 #include "tb.h"
 #include CONCAT5(V,TOP_NAME,_,TOP_NAME,.h)
 #include CONCAT5(V,TOP_NAME,_,orion_pro_top,.h)
@@ -18,9 +19,10 @@ public:
     {
         p_instance = this;
     }
-    void init(GUIOutput* p_gui, int argc, char** argv)
+    void init(GUIOutput* p_gui, KBD* p_kbd, int argc, char** argv)
     {
         this->p_gui = p_gui;
+        this->p_kbd = p_kbd;
         TB* tb = new TB(TOP_NAME_STR, argc, argv);
         tb->init(on_step_cb);
         TOP_CLASS* top = tb->get_top();
@@ -28,6 +30,8 @@ public:
                                   (uint8_t*)&top->TOP_NAME->u_orion_core->video_mode,
                                   (uint8_t*)&top->TOP_NAME->u_orion_core->screen_mode,
                                   (uint8_t*)&top->TOP_NAME->u_orion_core->colors_pseudo);
+        p_kbd->set_memory_pointer((uint8_t*)&top->TOP_NAME->u_orion_core->kbd_input,
+                                  (uint8_t*)&top->TOP_NAME->u_orion_core->kbd_output);
         p_thr = new std::thread(this->main, tb);
     }
     void run()
@@ -35,12 +39,23 @@ public:
         p_thr->join();
     }
 private:
-    static SIM* p_instance;
-    GUIOutput* p_gui;
-    std::thread* p_thr;
+    static SIM*     p_instance;
+    GUIOutput*      p_gui;
+    KBD*            p_kbd;
+    std::thread*    p_thr;
 
     static int on_step_cb(uint64_t time, TOP_CLASS* p_top)
     {
+        static uint16_t prev_rows = 0;
+        {
+            // keyboard check
+            uint32_t rows = p_top->TOP_NAME->u_orion_core->kbd_output;
+            if (rows != prev_rows)
+            {
+                p_instance->p_kbd->proc();
+            }
+            prev_rows = rows;
+        }
         if ((time % TICK_PERIOD) == 0)
         {
             p_top->i_clk = !p_top->i_clk;

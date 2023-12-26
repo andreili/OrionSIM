@@ -88,11 +88,11 @@ module orion_pro_top
 	logic[7:0]	r_ctrl_2c;
 
 	logic	w_sel_mem;
-	logic	w_sel_mem_f8, w_sel_mem_f9, w_sel_mem_fa;
+	logic	w_sel_mem_f4, w_sel_mem_f8, w_sel_mem_f9, w_sel_mem_fa;
 
 	logic	w_sel_io;
 	logic	w_sel_io_f8, w_sel_io_f9, w_sel_io_fa, w_sel_io_fb, w_sel_io_fc;
-	logic	w_sel_io_00, w_sel_io_01, w_sel_io_02;
+	logic	w_sel_io_00, w_sel_io_01, w_sel_io_02, w_sel_io_06;
 
 	logic	w_sel_f9_write, w_sel_fb_write;
 	logic	w_sel_01_write, w_sel_02_write;
@@ -107,13 +107,16 @@ module orion_pro_top
 	assign w_sel_mem = ~(cpu_mreq_n | ~cpu_rfsh_n) & o128_mode;
 	assign w_sel_io = ~cpu_iorq_n;
 
+	assign w_sel_mem_f4 = (cpu_addr[15:8] == 8'hf4) & w_sel_mem;
 	assign w_sel_mem_f8 = (cpu_addr[15:8] == 8'hf8) & w_sel_mem;
 	assign w_sel_mem_f9 = (cpu_addr[15:8] == 8'hf9) & w_sel_mem;
 	assign w_sel_mem_fa = (cpu_addr[15:8] == 8'hfa) & w_sel_mem;
 
-	assign w_sel_io_00 = (cpu_addr[7:2] == 6'h00) & w_sel_io;
-	assign w_sel_io_01 = (cpu_addr[7:2] == 6'h01) & w_sel_io;
-	assign w_sel_io_02 = (cpu_addr[7:2] == 6'h02) & w_sel_io;
+	assign w_sel_io_00 = (cpu_addr[7:2] == 6'h00) & w_sel_io;   //00..03
+	assign w_sel_io_01 = (cpu_addr[7:2] == 6'h01) & w_sel_io;   //04..07
+	assign w_sel_io_02 = (cpu_addr[7:2] == 6'h02) & w_sel_io;   //08..0b
+    //..
+	assign w_sel_io_06 = (cpu_addr[7:2] == 6'h06) & w_sel_io;   //18..1b
 
 	assign w_sel_io_f8 = (cpu_addr[7:0] == 8'hf8) & w_sel_io;
 	assign w_sel_io_f9 = (cpu_addr[7:0] == 8'hf9) & w_sel_io;
@@ -247,7 +250,7 @@ module orion_pro_top
     logic[4:0] ram_page_sel;
     assign ram_page_sel = o128_mode ? w_ram_page : ram_page_pro[4:0];
     assign mem_addr_hi = ((!ctrl_mz) & (!cpu_addr[15]) & (!cpu_addr[14])) ? { 2'b00, ctrl_FB_BS, ctrl_FB_SS }
-                       : (mem_top) ? { 5'b1_1111, cpu_addr[15:14] }
+                       : (mem_top) ? { 5'b0_0111, cpu_addr[15:14] } // segment 0x1f!!!
                        : (ma_sel == 2'b00) ? r_ctrl_2a[6:0]
                        : (ma_sel == 2'b10) ? r_ctrl_2b[6:0]
                        : (ma_sel == 2'b01) ? r_ctrl_2c[6:0]
@@ -285,6 +288,32 @@ module orion_pro_top
     end
     assign ram_rdata = ram[ram_addr];
     assign cpu_rdata = (!mem_rdn) ? ram_rdata : 'z;
+
+    // keyboard
+    logic sel_kbd;
+    logic[7:0] kbd_rdata;
+    logic[23:0] kbd_input /* verilator public */;
+    logic[23:0] kbd_output /* verilator public */;
+    assign sel_kbd = w_sel_mem_f4 | w_sel_io_06;
+    i8255
+    u_kbd_io
+    (
+        .i_clk          (cpu_clk),
+        .i_addr         (cpu_addr[1:0]),
+        .i_data         (cpu_wdata),
+        .o_data         (kbd_rdata),
+        .i_rd_n         (cpu_rd_n),
+        .i_wr_n         (cpu_wr_n),
+        .i_cs_n         (!sel_kbd),
+        .i_reset        (!reset_n),
+        .i_PA           (kbd_input[7:0]),
+        .o_PA           (kbd_output[7:0]),
+        .i_PB           (kbd_input[15:8]),
+        .o_PB           (kbd_output[15:8]),
+        .i_PC           (kbd_input[23:16]),
+        .o_PC           (kbd_output[23:16])
+    );
+    assign cpu_rdata = sel_kbd ? kbd_rdata : 'z;
 
 initial
 begin
