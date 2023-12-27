@@ -189,7 +189,7 @@ module orion_pro_top
             ctrl_FB_BS <= '0;
             ctrl_FB_xmem <= '0;
             ctrl_FB_int <= '0;
-            ctrl_FB_mz <= '1;
+            ctrl_FB_mz <= '0;
 			ctrl_FB_erom <= '1;
 			r_ctrl_f9 <= '0;
             video_mode <= '0;
@@ -215,7 +215,7 @@ module orion_pro_top
             ctrl_FB_BS <= cpu_wdata[4:2];
             ctrl_FB_xmem <= cpu_wdata[5];
             ctrl_FB_int <= cpu_wdata[6];
-            ctrl_FB_mz <= ~cpu_wdata[7];
+            ctrl_FB_mz <= cpu_wdata[7];
         end
 		else if (w_sel_io_fc & (~cpu_wr_n))
         begin
@@ -226,7 +226,7 @@ module orion_pro_top
     logic ctrl_mz;
 	assign w_erom = rom1_en | ctrl_FB_erom;
     //assign intn = !(ctrl_FB_int & frame_end);
-    assign ctrl_mz = cpu_addr[15] | cpu_addr[14] | ctrl_FB_mz;
+    assign ctrl_mz = (!ctrl_FB_mz) & o128_mode & (!cpu_addr[15]) & (!cpu_addr[14]);
 
 	assign cpu_rdata =	(w_sel_io_00 & (!cpu_rd_n) & (cpu_addr[1:0] == 2'b00)) ? i_cfg_sw :
 						(w_sel_io_02 & (!cpu_rd_n) & (cpu_addr[1:0] == 2'b00)) ? r_ctrl_1a :
@@ -238,29 +238,26 @@ module orion_pro_top
 						((w_sel_mem_f9 | w_sel_io_f9) & (!cpu_rd_n)) ? { 3'b0, r_ctrl_f9 } :
 						'z;
 
-    logic mem_fxxx, mem_top;
+    // memory management for all modes
+    logic mem_hi, mem_fxxx, mem_top;
     logic[2:0] mb;
-    logic[1:0] ma_sel;
-
-    assign mem_fxxx = cpu_addr[12] & cpu_addr[13] & cpu_addr[14] & cpu_addr[15] & o128_mode;
-    assign mem_top = (cpu_addr[12] & cpu_addr[13] & cpu_addr[14] & cpu_addr[15] & top_mem_en) | mem_fxxx;
-    assign mb[0] = !(ram0_en & (!cpu_addr[14]) & (!cpu_addr[15]));	// RAM0
-    assign mb[1] = !(ram1_en &   cpu_addr[14]  & (!cpu_addr[15]));	// RAM1
-    assign mb[2] = !(ram2_en & (!cpu_addr[14]) &   cpu_addr[15]);	// RAM2
-    assign ma_sel[0] = mb[0] & mb[1];
-    assign ma_sel[1] = mb[0] & mb[2];
-
     logic[20:14] mem_addr_hi;
-    logic[4:0] ram_page_sel;
-    assign ram_page_sel = o128_mode ? w_ram_page : ram_page_pro[4:0];
-    assign mem_addr_hi = /*((!ctrl_mz) & (!cpu_addr[15]) & (!cpu_addr[14])) ? { 2'b00, ctrl_FB_BS, ctrl_FB_SS }
-                       :*/ (mem_top) ? { 5'b0_0111, cpu_addr[15:14] } // segment 0x1f!!!
-                       : (ma_sel == 2'b00) ? r_ctrl_2a[6:0]
-                       : (ma_sel == 2'b10) ? r_ctrl_2b[6:0]
-                       : (ma_sel == 2'b01) ? r_ctrl_2c[6:0]
-                       : { ram_page_sel, cpu_addr[15:14] };
+    assign mem_hi   = cpu_addr[12] & cpu_addr[13] & cpu_addr[14] & cpu_addr[15];
+    assign mem_fxxx = mem_hi &  o128_mode;
+    assign mem_top  = mem_hi & (o128_mode | top_mem_en);
+    assign mb[0] = ram0_en & (!cpu_addr[14]) & (!cpu_addr[15]);	// RAM0
+    assign mb[1] = ram1_en &   cpu_addr[14]  & (!cpu_addr[15]);	// RAM1
+    assign mb[2] = ram2_en & (!cpu_addr[14]) &   cpu_addr[15];	// RAM2
+    assign mem_addr_hi = ctrl_mz   ? { 2'b00, ctrl_FB_BS, ctrl_FB_SS }
+                       : mem_top   ? { 5'b0_0111, cpu_addr[15:14] } // segment 0x1f!!!
+                       : mb[0]     ? r_ctrl_2a[6:0]
+                       : mb[1]     ? r_ctrl_2b[6:0]
+                       : mb[2]     ? r_ctrl_2c[6:0]
+                       : o128_mode ? { w_ram_page, cpu_addr[15:14] }
+                       :             { ram_page_pro[4:0], cpu_addr[15:14] };
 
-    logic rom_sel, rom1_sel, rom2_sel;
+    // ROM selection
+    logic  rom_sel, rom1_sel, rom2_sel;
     assign rom_sel  = cpu_iorq_n & (!cpu_addr[15]) & (!cpu_addr[14]);
     assign rom1_sel = rom_sel &    (!cpu_addr[13]) & (rom1_en | ctrl_FB_erom);
     assign rom2_sel = rom_sel &      cpu_addr[13]  &  rom2_en;
@@ -269,16 +266,16 @@ module orion_pro_top
     assign blram = rom1_sel | rom2_sel | (cpu_mreq_n | ~cpu_rfsh_n);
     assign mem_blk = (((cpu_addr[10] | cpu_addr[11]) & mem_fxxx) & (!ctrl_FB_xmem));
     assign mem_rd_en = (!mem_blk) | cpu_addr[11];
-    assign mem_wrn = cpu_wr_n | cpu_mreq_n | mem_blk | blram;
-    assign mem_rdn = cpu_rd_n | cpu_mreq_n | (!mem_rd_en) | blram;
+    assign mem_wrn = cpu_wr_n | mem_blk | blram;
+    assign mem_rdn = cpu_rd_n | (!mem_rd_en) | blram;
     assign mem_req = !(mem_wrn & mem_rdn);
 
     // ROM's
     logic[7:0] rom_1[8*1024];
-    logic[7:0] rom_2[64*1024];
-    logic[15:0] rom2_addr_full;
+    logic[7:0] rom_2[1024*1024];
+    logic[19:0] rom2_addr_full;
     assign cpu_rdata = (rom1_sel & (!cpu_rd_n)) ? rom_1[cpu_addr[12:0]] : 'z;
-    assign rom2_addr_full = { rom2_addr[2:0], cpu_addr[12:0] };
+    assign rom2_addr_full = { rom2_addr[6:0], cpu_addr[12:0] };
     assign cpu_rdata = (rom2_sel & (!cpu_rd_n)) ? rom_2[rom2_addr_full] : 'z;
 
     // RAM's

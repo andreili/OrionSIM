@@ -14,7 +14,7 @@ module emulate
     (
         .i_clk                          (i_clk),
         .i_reset_n                      (i_reset_n),
-        .i_cfg_sw                       (8'b1000_0011)
+        .i_cfg_sw                       (8'b0000_1011)
     );
 
 endmodule
